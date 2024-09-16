@@ -16,6 +16,10 @@ def main():
         "Replit Tips",
         "API Integration",
         "GitHub Models",
+        "Perplexity API",
+        "Advanced Anthropic API",
+        "Advanced OpenAI API",
+        "Kolada API",
         "Deployment Guide",
         "Data Visualization",
         "Best Practices",
@@ -40,6 +44,14 @@ def main():
         api_integration()
     elif choice == "GitHub Models":
         github_models()
+    elif choice == "Perplexity API":
+        perplexity_api()
+    elif choice == "Advanced Anthropic API":
+        advanced_anthropic_api()
+    elif choice == "Advanced OpenAI API":
+        advanced_openai_api()
+    elif choice == "Kolada API":
+        kolada_api()
     elif choice == "Deployment Guide":
         deployment_guide()
     elif choice == "Data Visualization":
@@ -705,6 +717,531 @@ def github_models():
     # Usage
     result = safe_model_call(use_gpt4_model)
     """)
+
+def perplexity_api():
+    st.header("Using Perplexity API")
+    
+    st.markdown("""
+    The Perplexity API provides access to advanced language models for chat completions. 
+    Here's how to use it in your Python applications.
+    """)
+    
+    st.subheader("Authentication")
+    st.code("""
+    import requests
+
+    API_KEY = "your-api-key-here"
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+    """)
+    
+    st.subheader("Making a Basic API Call")
+    st.code("""
+    import requests
+    import json
+
+    url = "https://api.perplexity.ai/chat/completions"
+
+    payload = {
+        "model": "llama-3.1-sonar-small-128k-online",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Be precise and concise."
+            },
+            {
+                "role": "user",
+                "content": "What is the capital of France?"
+            }
+        ],
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "return_citations": True
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+    print(json.dumps(response.json(), indent=2))
+    """)
+    
+    st.subheader("Handling Rate Limits")
+    st.markdown("""
+    Perplexity API has rate limits based on the model used. For example:
+    - `llama-3.1-sonar-small-128k-online`: 20 requests/min
+    - `llama-3.1-8b-instruct`: 100 requests/min
+    
+    Implement appropriate error handling and retry mechanisms to manage these limits.
+    """)
+    
+    st.subheader("Streaming Responses")
+    st.code("""
+    import requests
+    import sseclient
+
+    url = "https://api.perplexity.ai/chat/completions"
+    payload["stream"] = True
+
+    response = requests.post(url, json=payload, headers=headers, stream=True)
+    client = sseclient.SSEClient(response)
+
+    for event in client.events():
+        if event.data != "[DONE]":
+            print(json.loads(event.data)['choices'][0]['delta'].get('content', ''), end='')
+    """)
+    
+    st.subheader("Best Practices")
+    st.markdown("""
+    1. Always handle API errors gracefully.
+    2. Use environment variables to store your API key.
+    3. Implement retry logic for rate limit errors.
+    4. Consider using async methods for improved performance in high-volume applications.
+    5. Keep your model and API version up-to-date.
+    """)
+
+def advanced_anthropic_api():
+    st.header("Advanced Anthropic API Usage")
+
+    st.subheader("Latest Anthropic Models")
+    st.markdown("""
+    - **Claude 3.5 Sonnet**: 
+        - API Model Name: claude-3-5-sonnet-20240620
+        - Max Tokens: 200,000
+        - Cost: $3.00 / $15.00 per 1M tokens (input/output)
+    - **Claude 3 Opus**:
+        - API Model Name: claude-3-opus-20240229
+        - Max Tokens: 200,000
+        - Cost: $15.00 / $75.00 per 1M tokens (input/output)
+    - **Claude 3 Sonnet**:
+        - API Model Name: claude-3-sonnet-20240229
+        - Max Tokens: 200,000
+        - Cost: $3.00 / $15.00 per 1M tokens (input/output)
+    - **Claude 3 Haiku**:
+        - API Model Name: claude-3-haiku-20240307
+        - Max Tokens: 200,000
+        - Cost: $0.25 / $1.25 per 1M tokens (input/output)
+    """)
+
+    st.subheader("Basic API Call")
+    st.code("""
+    import anthropic
+
+    client = anthropic.Anthropic()
+
+    response = client.messages.create(
+        model="claude-3-5-sonnet-20240620",
+        max_tokens=1000,
+        system="You are a world-class poet. Respond only with short poems.",
+        messages=[
+            {
+                "role": "user",
+                "content": "Why is the ocean salty?"
+            }
+        ]
+    )
+    print(response.content)
+    """)
+
+    st.subheader("Structured Outputs")
+    st.markdown("""
+    Claude can generate structured outputs adhering to a specified JSON Schema.
+    """)
+    st.code("""
+    from pydantic import BaseModel
+
+    class CalendarEvent(BaseModel):
+        name: str
+        date: str
+        participants: list[str]
+
+    completion = client.messages.create(
+        model="claude-3-5-sonnet-20240620",
+        max_tokens=1000,
+        system="Extract the event information.",
+        messages=[
+            {
+                "role": "user",
+                "content": "Alice and Bob are attending a meeting on September 15th."
+            }
+        ],
+        response_format=CalendarEvent.schema_json()
+    )
+
+    event = CalendarEvent.parse_raw(completion.content[0].text)
+    print(event)
+    """)
+
+    st.subheader("Tool Use")
+    st.markdown("""
+    Claude can be equipped with custom tools to handle specific queries.
+    """)
+    st.code("""
+    weather_tool = {
+        "name": "get_weather",
+        "description": "Get the current weather in a given location",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "location": {"type": "string", "description": "City and state"},
+                "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]}
+            },
+            "required": ["location"]
+        }
+    }
+
+    response = client.messages.create(
+        model="claude-3-5-sonnet-20240620",
+        max_tokens=1000,
+        system="You are a helpful assistant.",
+        messages=[
+            {
+                "role": "user",
+                "content": "What's the weather like in San Francisco?"
+            }
+        ],
+        tools=[weather_tool]
+    )
+    """)
+
+    st.subheader("Prompt Caching (Beta)")
+    st.markdown("""
+    Prompt Caching optimizes API usage by storing and reusing sections of your prompt.
+    """)
+    st.code("""
+    response = client.messages.create(
+        model="claude-3-5-sonnet-20240620",
+        max_tokens=1000,
+        system=[
+            {
+                "type": "text", 
+                "text": "You are an AI assistant tasked with analyzing literary works."
+            },
+            {
+                "type": "text", 
+                "text": "<the entire contents of Pride and Prejudice>",
+                "cache_control": {"type": "ephemeral"}
+            }
+        ],
+        messages=[
+            {
+                "role": "user",
+                "content": "Analyze the major themes in Pride and Prejudice."
+            }
+        ]
+    )
+    """)
+
+    st.subheader("Best Practices")
+    st.markdown("""
+    1. Use structured outputs for consistent data formats.
+    2. Leverage tool use for complex, multi-step tasks.
+    3. Implement prompt caching for improved performance with large contexts.
+    4. Always handle API errors gracefully.
+    5. Monitor token usage to control costs.
+    """)
+
+def kolada_api():
+    st.header("Kolada API Usage Guide")
+
+    st.markdown("""
+    The Kolada API provides access to standardized key performance indicators (KPIs) for Swedish municipalities and organizational units. This guide covers how to interact with the Kolada API, handle its data, and apply best practices.
+    """)
+
+    st.subheader("API Overview")
+    st.markdown("""
+    - **Municipal Data**: KPIs for Swedish municipalities (kommuner) and county councils (landsting), covering approximately 6500 KPIs.
+    - **Organizational Unit Data**: KPIs for various organizational units (schools, hospitals, etc.), though with a smaller dataset.
+    - Each KPI is measured annually and may be divided by gender (female, male, total).
+    - Data is structured along four main dimensions: KPI, Municipality/Organizational Unit, Year, and Gender.
+    """)
+
+    st.subheader("Common Data Structure")
+    st.code("""
+    {
+        "kpi": "<KPI ID>",
+        "municipality": "<Municipality ID>",
+        "period": "<Year>",
+        "values": [
+           {
+             "count": <Number of Contributors>,
+             "gender": "T|K|F",  // T = Total, K = Male, F = Female
+             "status": "<Status>",
+             "value": <KPI Value> or null
+           }
+        ]
+    }
+    """)
+
+    st.subheader("Example API Calls")
+    st.code("""
+    import requests
+
+    # KPI data for a specific municipality and year
+    url = "http://api.kolada.se/v2/data/kpi/N00945/municipality/1860/year/2009"
+
+    # Municipality metadata
+    url = "http://api.kolada.se/v2/municipality?title=Stockholm"
+
+    # Organizational Unit data
+    url = "http://api.kolada.se/v2/oudata/kpi/N15033/ou/V15E144001301/year/2009"
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        # Process the data here
+    else:
+        print(f"Error: {response.status_code}")
+    """)
+
+    st.subheader("Handling Paginated Data")
+    st.code("""
+    def fetch_all_data(url):
+        all_data = []
+        while url:
+            response = requests.get(url)
+            if response.status_code == 200:
+                json_response = response.json()
+                all_data.extend(json_response['values'])
+                url = json_response.get('next_page')
+            else:
+                print(f"Error: {response.status_code}")
+                break
+        return all_data
+    """)
+
+    st.subheader("Best Practices for Data Handling")
+    st.markdown("""
+    1. **Convert Period Field to Integer**:
+    ```python
+    data['period'] = data['period'].astype(int)
+    ```
+
+    2. **Format Numeric Values to Two Decimal Places**:
+    ```python
+    formatted_value = f"{value:.2f}"
+    ```
+
+    3. **Map Municipality IDs to Human-Readable Names**:
+    ```python
+    municipality_mapping = {
+      "0114": "Upplands Väsby",
+      "0180": "Stockholm",
+      # Add more mappings as needed
+    }
+    data['municipality_name'] = data['municipality_id'].map(municipality_mapping)
+    ```
+    """)
+
+    st.subheader("Data Processing Example")
+    st.code("""
+    import pandas as pd
+
+    def process_kolada_data(raw_data):
+        df = pd.DataFrame(raw_data)
+        
+        # Convert period to integer
+        df['period'] = df['period'].astype(int)
+        
+        # Format KPI values to 2 decimal places
+        df['value'] = df['value'].apply(lambda x: f"{x:.2f}" if x is not None else x)
+        
+        # Map municipality IDs to names
+        municipality_mapping = {
+            "1860": "Lund",
+            "0180": "Stockholm",
+            # Add more mappings as needed
+        }
+        df['municipality_name'] = df['municipality'].map(municipality_mapping)
+        
+        return df
+
+    # Usage
+    raw_data = fetch_all_data("http://api.kolada.se/v2/data/kpi/N00945/municipality/1860/year/2009")
+    processed_data = process_kolada_data(raw_data)
+    """)
+
+    st.subheader("Visualization Example")
+    st.code("""
+    import matplotlib.pyplot as plt
+
+    def plot_kpi_data(data, title="KPI Over Time"):
+        plt.figure(figsize=(10, 6))
+        plt.bar(data['period'], data['value'])
+        plt.title(title)
+        plt.xlabel("Year")
+        plt.ylabel("KPI Value")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        st.pyplot(plt)
+
+    # Usage
+    plot_kpi_data(processed_data, "Population Growth in Lund")
+    """)
+
+    st.subheader("Best Practices")
+    st.markdown("""
+    1. Always handle API errors and implement proper error handling.
+    2. Use appropriate data types (e.g., integers for years, floats for KPI values).
+    3. Implement caching for frequently accessed data to reduce API calls.
+    4. Respect API rate limits and implement backoff strategies if necessary.
+    5. Keep your municipality and KPI mappings up-to-date.
+    6. Use pandas for efficient data manipulation and analysis.
+    7. Provide clear visualizations to make the data more accessible.
+    """)
+
+def advanced_openai_api():
+    st.header("Advanced OpenAI API Usage")
+
+    st.subheader("Latest OpenAI Models")
+    st.markdown("""
+    - **GPT-4o (2024-08-06)**:
+        - API Model Name: gpt-4o-2024-08-06
+        - Max Tokens: 128,000
+        - Max Output Tokens: 16,384
+        - Cost: $2.50 per 1K input tokens, $7.50 per 1K output tokens
+    - **GPT-4o (2024-05-13)**:
+        - API Model Name: gpt-4o-2024-05-13
+        - Max Tokens: 128,000
+        - Max Output Tokens: 4,096
+        - Cost: $5.00 per 1K input tokens, $15.00 per 1K output tokens
+    - **GPT-4o-mini (2024-07-18)**:
+        - API Model Name: gpt-4o-mini-2024-07-18
+        - Max Tokens: 128,000
+        - Cost: $0.15 per 1M input tokens, $0.60 per 1M output tokens
+    """)
+
+    st.subheader("Basic API Call")
+    st.code("""
+    from openai import OpenAI
+
+    client = OpenAI()
+
+    response = client.chat.completions.create(
+        model="gpt-4o-2024-08-06",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Who won the World Series in 2020?"}
+        ],
+        temperature=0.7,
+        max_tokens=150
+    )
+
+    print(response.choices[0].message.content)
+    """)
+
+    st.subheader("Streaming Responses")
+    st.code("""
+    response = client.chat.completions.create(
+        model="gpt-4o-2024-08-06",
+        messages=[...],
+        stream=True
+    )
+
+    for chunk in response:
+        print(chunk.choices[0].delta.content, end='')
+    """)
+
+    st.subheader("Function Calling")
+    st.code("""
+    functions = [
+        {
+            "name": "get_weather",
+            "description": "Get the current weather in a location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": ["celsius", "fahrenheit"]
+                    }
+                },
+                "required": ["location"]
+            }
+        }
+    ]
+
+    response = client.chat.completions.create(
+        model="gpt-4o-2024-08-06",
+        messages=[
+            {"role": "user", "content": "What's the weather like in Boston?"}
+        ],
+        functions=functions,
+        function_call="auto"
+    )
+    """)
+
+    st.subheader("Vision Capabilities")
+    st.code("""
+    response = client.chat.completions.create(
+        model="gpt-4o-2024-08-06",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "What's in this image?"},
+                    {
+                        "type": "image",
+                        "image_url": {"url": "https://example.com/image.jpg"}
+                    }
+                ]
+            }
+        ]
+    )
+    """)
+
+    st.subheader("Reproducible Outputs (Beta)")
+    st.code("""
+    response = client.chat.completions.create(
+        model="gpt-4o-2024-08-06",
+        messages=[...],
+        seed=42
+    )
+    """)
+
+    st.subheader("Best Practices")
+    st.markdown("""
+    1. Use the latest models for improved performance and capabilities.
+    2. Implement streaming for better user experience with long responses.
+    3. Leverage function calling for structured interactions.
+    4. Utilize vision capabilities for image-related tasks.
+    5. Set a seed for reproducible outputs when needed.
+    6. Always handle API errors and implement proper error handling.
+    7. Monitor and optimize token usage to control costs.
+    """)
+
+    st.subheader("Visualization Example")
+    st.code("""
+    import matplotlib.pyplot as plt
+
+    def plot_kpi_data(data, title="KPI Over Time"):
+        plt.figure(figsize=(10, 6))
+        plt.bar(data['period'], data['value'])
+        plt.title(title)
+        plt.xlabel("Year")
+        plt.ylabel("KPI Value")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        st.pyplot(plt)
+
+    # Usage
+    plot_kpi_data(processed_data, "Population Growth in Lund")
+    """)
+
+    st.subheader("Best Practices")
+    st.markdown("""
+    1. Always handle API errors and implement proper error handling.
+    2. Use appropriate data types (e.g., integers for years, floats for KPI values).
+    3. Implement caching for frequently accessed data to reduce API calls.
+    4. Respect API rate limits and implement backoff strategies if necessary.
+    5. Keep your municipality and KPI mappings up-to-date.
+    6. Use pandas for efficient data manipulation and analysis.
+    7. Provide clear visualizations to make the data more accessible.
+    """)
+
 
 def data_visualization():
     st.header("Data Visualization in Streamlit")
