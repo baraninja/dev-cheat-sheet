@@ -28,7 +28,7 @@ def streamlit_basics():
     """)
     
     st.subheader("Display Text and Data")
-    st.code("""
+    st.code(r"""
     # Display text
     st.text('Fixed width text')
     st.markdown('_Markdown_')
