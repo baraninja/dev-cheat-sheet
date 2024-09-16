@@ -4,7 +4,7 @@ def streamlit_basics():
     st.header("Streamlit Basics")
     
     st.subheader("Installation and Import")
-    st.code("""
+    st.code(r"""
     # Install Streamlit
     $ pip install streamlit
 

@@ -4,7 +4,7 @@ def python_tips():
     st.header("Python Tips")
     
     st.subheader("Virtual Environments")
-    st.code("""
+    st.code(r"""
     # Create a virtual environment
     python -m venv myenv
 
